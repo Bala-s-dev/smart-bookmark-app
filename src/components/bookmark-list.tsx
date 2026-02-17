@@ -1,17 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useOptimistic, useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { Trash2, Globe, ArrowUpRight } from 'lucide-react';
+import { Trash2, Globe, ArrowUpRight, Clock } from 'lucide-react';
 import { deleteBookmark } from '@/app/actions/bookmarks';
+// Import the payload type from Supabase
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export default function BookmarkList({
   initialBookmarks,
 }: {
   initialBookmarks: any[];
 }) {
+  
   const [bookmarks, setBookmarks] = useState(initialBookmarks);
+  const [isPending, startTransition] = useTransition();
   const supabase = createClient();
+
+  const [optimisticBookmarks, addOptimisticDelete] = useOptimistic(
+    bookmarks,
+    (state, deletedId) => state.filter((b) => b.id !== deletedId),
+  );
 
   useEffect(() => {
     const channel = supabase
@@ -19,14 +28,22 @@ export default function BookmarkList({
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bookmarks' },
-        (payload) => {
-          if (payload.eventType === 'INSERT')
-            setBookmarks((prev) => [payload.new, ...prev]);
-          if (payload.eventType === 'DELETE')
-            setBookmarks((prev) => prev.filter((b) => b.id !== payload.old.id));
+        // Explicitly type the payload parameter
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          if (payload.eventType === 'INSERT') {
+            setBookmarks((prev) => [payload.new as any, ...prev]);
+          }
+          if (payload.eventType === 'DELETE') {
+            // payload.old might be empty depending on Replica Identity settings
+            const deletedId = (payload.old as any)?.id;
+            if (deletedId) {
+              setBookmarks((prev) => prev.filter((b) => b.id !== deletedId));
+            }
+          }
         },
       )
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
