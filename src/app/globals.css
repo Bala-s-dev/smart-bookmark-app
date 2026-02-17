@@ -1,23 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #f8fafc; /* Slate 50 */
-  --foreground: #0f172a;
+@theme {
+  --color-brand-blue: #3b82f6;
+  --color-brand-dark: #020617;
+  --color-card-bg: rgba(15, 23, 42, 0.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617; /* Slate 950 */
-    --foreground: #f8fafc;
-  }
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 body {
   color: var(--foreground);
-  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent),
-              radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.05), transparent),
-              var(--background);
+  background-color: var(--background);
+  background-image: 
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.08) 0%, transparent 40%);
+  background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* Custom scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }

@@ -3,8 +3,8 @@ import './globals.css';
 import Navbar from '@/components/navbar';
 
 export const metadata: Metadata = {
-  title: 'Smart Bookmark',
-  description: 'Secure, real-time link management',
+  title: 'Smart Bookmark | Personal Vault',
+  description: 'Secure, real-time link management for professionals.',
 };
 
 export default function RootLayout({
@@ -14,9 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#020617] text-slate-200 antialiased min-h-screen">
+      <body className="antialiased selection:bg-blue-500/30">
         <Navbar />
-        <main className="max-w-6xl mx-auto px-4 py-12">{children}</main>
+        <main className="max-w-6xl mx-auto px-6 py-12">{children}</main>
       </body>
     </html>
   );
