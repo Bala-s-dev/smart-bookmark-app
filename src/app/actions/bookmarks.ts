@@ -37,3 +37,26 @@ export async function addBookmark(formData: FormData) {
   revalidatePath('/');
   return { success: true };
 }
+
+export async function deleteBookmark(id: string) {
+  const supabase = await createClient();
+
+  // 1. Get user session to verify they are logged in
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  // 2. Delete the bookmark
+  // RLS ensures only the owner can successfully delete
+  const { error } = await supabase.from('bookmarks').delete().eq('id', id);
+
+  if (error) {
+    console.error('Delete error:', error.message);
+    return { error: 'Failed to delete bookmark' };
+  }
+
+  // 3. Refresh the UI
+  revalidatePath('/');
+  return { success: true };
+}
