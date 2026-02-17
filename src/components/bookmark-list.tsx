@@ -4,7 +4,6 @@ import { useEffect, useState, useOptimistic, useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Trash2, Globe, ArrowUpRight, Clock } from 'lucide-react';
 import { deleteBookmark } from '@/app/actions/bookmarks';
-// Import the payload type from Supabase
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export default function BookmarkList({
@@ -12,29 +11,41 @@ export default function BookmarkList({
 }: {
   initialBookmarks: any[];
 }) {
-  
+  // Internal state for the source of truth
   const [bookmarks, setBookmarks] = useState(initialBookmarks);
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
 
+  // 1. SYNC STATE WITH PROPS:
+  // When revalidatePath('/') happens on the server, this prop changes.
+  // We must update the local state to match the fresh server data.
+  useEffect(() => {
+    setBookmarks(initialBookmarks);
+  }, [initialBookmarks]);
+
+  // 2. OPTIMISTIC UI:
   const [optimisticBookmarks, addOptimisticDelete] = useOptimistic(
     bookmarks,
     (state, deletedId) => state.filter((b) => b.id !== deletedId),
   );
 
+  // 3. REAL-TIME SYNC (for other tabs/devices):
   useEffect(() => {
     const channel = supabase
       .channel('realtime-bookmarks')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bookmarks' },
-        // Explicitly type the payload parameter
         (payload: RealtimePostgresChangesPayload<any>) => {
           if (payload.eventType === 'INSERT') {
-            setBookmarks((prev) => [payload.new as any, ...prev]);
+            const newRecord = payload.new as any;
+            setBookmarks((prev) => {
+              // Prevent duplicates if revalidatePath and Realtime fire at the same time
+              if (prev.some((b) => b.id === newRecord.id)) return prev;
+              return [newRecord, ...prev];
+            });
           }
           if (payload.eventType === 'DELETE') {
-            // payload.old might be empty depending on Replica Identity settings
             const deletedId = (payload.old as any)?.id;
             if (deletedId) {
               setBookmarks((prev) => prev.filter((b) => b.id !== deletedId));
@@ -49,7 +60,7 @@ export default function BookmarkList({
     };
   }, [supabase]);
 
-  if (bookmarks.length === 0)
+  if (optimisticBookmarks.length === 0)
     return (
       <div className="py-32 text-center bg-slate-900/20 border border-dashed border-white/5 rounded-[2.5rem]">
         <Globe className="w-12 h-12 text-slate-800 mx-auto mb-6 opacity-30" />
@@ -61,7 +72,7 @@ export default function BookmarkList({
 
   return (
     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-      {bookmarks.map((bookmark) => {
+      {optimisticBookmarks.map((bookmark) => {
         const domain = new URL(bookmark.url).hostname;
         const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
@@ -75,6 +86,7 @@ export default function BookmarkList({
                 <img
                   src={faviconUrl}
                   alt={bookmark.title}
+                  loading="lazy"
                   className="w-8 h-8 object-contain z-10 relative"
                   onError={(e) => {
                     e.currentTarget.style.opacity = '0';
@@ -84,8 +96,16 @@ export default function BookmarkList({
               </div>
 
               <button
-                onClick={() => deleteBookmark(bookmark.id)}
-                className="p-3 text-slate-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all active:scale-90"
+                disabled={isPending}
+                onClick={() => {
+                  if (confirm('Delete this bookmark?')) {
+                    startTransition(async () => {
+                      addOptimisticDelete(bookmark.id);
+                      await deleteBookmark(bookmark.id);
+                    });
+                  }
+                }}
+                className="p-3 text-slate-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all active:scale-90 disabled:opacity-50"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -101,9 +121,14 @@ export default function BookmarkList({
             </div>
 
             <div className="mt-10 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-600 uppercase tracking-widest font-bold">
+                <Clock className="w-3 h-3" />
+                Live
+              </div>
               <a
                 href={bookmark.url}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="group/btn inline-flex items-center gap-2 text-[10px] font-black text-blue-500 hover:text-white bg-blue-500/5 hover:bg-blue-600 px-4 py-2 rounded-lg tracking-[0.2em] transition-all"
               >
                 LAUNCH
