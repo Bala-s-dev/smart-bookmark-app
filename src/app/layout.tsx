@@ -2,30 +2,21 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/navbar';
 
-
 export const metadata: Metadata = {
-  title: {
-    default: 'Smart Bookmark',
-    template: '%s | Smart Bookmark',
-  },
-  description: 'A secure, real-time manager for your favorite links.',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  title: 'Smart Bookmark',
+  description: 'Secure, real-time link management',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className="antialiased min-h-screen flex flex-col">
+    <html lang="en" className="dark">
+      <body className="bg-[#020617] text-slate-200 antialiased min-h-screen">
         <Navbar />
-        <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-          {children}
-        </main>
+        <main className="max-w-6xl mx-auto px-4 py-12">{children}</main>
       </body>
     </html>
   );

@@ -2,91 +2,86 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { ExternalLink, Trash2, Globe } from 'lucide-react';
+import { ExternalLink, Trash2, Globe, Clock } from 'lucide-react';
 import { deleteBookmark } from '@/app/actions/bookmarks';
-
-type Bookmark = {
-  id: string;
-  url: string;
-  title: string;
-  created_at: string;
-};
 
 export default function BookmarkList({
   initialBookmarks,
 }: {
-  initialBookmarks: Bookmark[];
+  initialBookmarks: any[];
 }) {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(initialBookmarks);
+  const [bookmarks, setBookmarks] = useState(initialBookmarks);
   const supabase = createClient();
 
   useEffect(() => {
-    // 1. Subscribe to realtime changes
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('realtime-bookmarks')
       .on(
         'postgres_changes',
-        {
-          event: '*', // Listen for ALL changes (INSERT, DELETE, etc.)
-          schema: 'public',
-          table: 'bookmarks',
-        },
+        { event: '*', schema: 'public', table: 'bookmarks' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newBookmark = payload.new as Bookmark;
-            setBookmarks((prev) => [newBookmark, ...prev]);
-          } else if (payload.eventType === 'DELETE') {
+          if (payload.eventType === 'INSERT')
+            setBookmarks((prev) => [payload.new, ...prev]);
+          if (payload.eventType === 'DELETE')
             setBookmarks((prev) => prev.filter((b) => b.id !== payload.old.id));
-          }
         },
       )
       .subscribe();
-
-    // 2. Cleanup subscription on unmount
     return () => {
       supabase.removeChannel(channel);
     };
   }, [supabase]);
 
-  if (bookmarks.length === 0) {
+  if (bookmarks.length === 0)
     return (
-      <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-        <Globe className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-        <p className="text-slate-500">
-          No bookmarks yet. Add your first link above!
+      <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-3xl">
+        <Globe className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+        <p className="text-slate-500 font-medium">
+          Your collection is empty. Let's add something!
         </p>
       </div>
     );
-  }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {bookmarks.map((bookmark) => (
         <div
           key={bookmark.id}
-          className="group p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:shadow-md transition-all flex justify-between items-start"
+          className="group bg-slate-900/40 border border-slate-800 hover:border-blue-500/50 hover:bg-slate-900/60 rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between shadow-sm"
         >
-          <div className="space-y-1 overflow-hidden">
-            <h3 className="font-semibold truncate text-slate-800 dark:text-slate-100">
+          <div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+                <Globe className="w-5 h-5" />
+              </div>
+              <button
+                onClick={() => deleteBookmark(bookmark.id)}
+                className="p-2 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+            <h3 className="text-lg font-bold text-slate-100 mb-1 truncate">
               {bookmark.title}
             </h3>
+            <p className="text-sm text-slate-500 font-mono truncate">
+              {new URL(bookmark.url).hostname}
+            </p>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-slate-800/50 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-600 uppercase tracking-wider font-bold">
+              <Clock className="w-3 h-3" />
+              Recent
+            </div>
             <a
               href={bookmark.url}
               target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5"
             >
-              <span className="truncate">{new URL(bookmark.url).hostname}</span>
-              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              OPEN LINK <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-
-          <button
-            onClick={() => deleteBookmark(bookmark.id)}
-            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
         </div>
       ))}
     </div>

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { addBookmark } from '@/app/actions/bookmarks';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Link as LinkIcon, Type } from 'lucide-react';
 
 export default function AddBookmarkForm() {
   const [isPending, startTransition] = useTransition();
@@ -10,61 +10,55 @@ export default function AddBookmarkForm() {
 
   async function clientAction(formData: FormData) {
     setError(null);
-
     startTransition(async () => {
       const result = await addBookmark(formData);
-      if (result?.error) {
-        setError(Object.values(result.error).flat()[0]);
-      } else {
-        // Reset form on success
-        const form = document.getElementById(
-          'add-bookmark-form',
-        ) as HTMLFormElement;
-        form.reset();
-      }
+      if (result?.error) setError(Object.values(result.error).flat()[0]);
+      else (document.getElementById('add-form') as HTMLFormElement).reset();
     });
   }
 
   return (
-    <form
-      id="add-bookmark-form"
-      action={clientAction}
-      className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm"
-    >
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 space-y-1">
+    <section className="mb-12">
+      <form
+        id="add-form"
+        action={clientAction}
+        className="bg-slate-900/50 border border-slate-800 p-2 rounded-2xl flex flex-col md:flex-row gap-2 shadow-2xl"
+      >
+        <div className="relative flex-1">
+          <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
             name="title"
-            placeholder="Website Title (e.g. GitHub)"
+            placeholder="Site Name"
             required
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full bg-transparent pl-11 pr-4 py-3 rounded-xl outline-none focus:bg-slate-800/50 transition-all text-sm"
           />
         </div>
-        <div className="flex-[2] space-y-1">
+        <div className="hidden md:block w-px h-6 self-center bg-slate-800" />
+        <div className="relative flex-[2]">
+          <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
             name="url"
             type="url"
-            placeholder="https://github.com"
+            placeholder="https://..."
             required
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="w-full bg-transparent pl-11 pr-4 py-3 rounded-xl outline-none focus:bg-slate-800/50 transition-all text-sm"
           />
         </div>
         <button
-          type="submit"
           disabled={isPending}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 min-w-[140px]"
+          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Plus className="w-4 h-4" />
           )}
-          Add Link
+          Add Bookmark
         </button>
-      </div>
+      </form>
       {error && (
-        <p className="mt-3 text-sm text-red-500 font-medium">{error}</p>
+        <p className="mt-3 text-xs text-red-400 ml-4 font-medium">{error}</p>
       )}
-    </form>
+    </section>
   );
 }
