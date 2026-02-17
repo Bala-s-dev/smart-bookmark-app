@@ -18,6 +18,37 @@ A professional, high-performance web application designed for secure, real-time 
 * **Styling**: Tailwind CSS v4
 * **Icons**: Lucide React
 * **Validation**: Zod
+  
+```mermaid
+graph TD
+    subgraph Client_Side [Client Side - Browser]
+        UI[Next.js Components]
+        Realtime[Supabase Realtime SDK]
+        FaviconAPI[Google Favicon API]
+    end
+
+    subgraph Server_Side [Server Side - Vercel]
+        NextJS[Next.js App Router]
+        Actions[Server Actions - Add/Delete]
+        Proxy[Proxy Auth Handler]
+    end
+
+    subgraph Backend_Services [Backend - Supabase]
+        Auth[Supabase Auth - Google OAuth]
+        DB[(PostgreSQL Database)]
+        RealtimeEngine[Realtime Engine - WebSockets]
+    end
+
+    %% Interactions
+    UI -->|1. Authenticate| Auth
+    UI -->|2. Invoke Actions| Actions
+    Actions -->|3. Update Data| DB
+    DB -->|4. Broadcast Changes| RealtimeEngine
+    RealtimeEngine -->|5. Push Update| Realtime
+    Realtime -->|6. Update UI| UI
+    UI -->|7. Fetch Icons| FaviconAPI
+    Proxy -->|Session Management| Auth
+```
 
 ## Challenges
 
@@ -61,5 +92,3 @@ A professional, high-performance web application designed for secure, real-time 
     npm run dev
     ```
 
-## 📝 License
-Distributed under the MIT License. See `LICENSE` for more information.
