@@ -2,9 +2,16 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/navbar';
 
+
 export const metadata: Metadata = {
-  title: 'Smart Bookmark App',
-  description: 'Manage your links in real-time',
+  title: {
+    default: 'Smart Bookmark',
+    template: '%s | Smart Bookmark',
+  },
+  description: 'A secure, real-time manager for your favorite links.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
